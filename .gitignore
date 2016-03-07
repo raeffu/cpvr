@@ -1,0 +1,8 @@
+.idea/
+.classpath
+*.iml
+out/
+.project
+images/*
+!images/Billard2048x1088x1.png
+lib/
