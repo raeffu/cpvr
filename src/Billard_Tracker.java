@@ -8,6 +8,10 @@ import ij.process.ImageStatistics;
 public class Billard_Tracker implements PlugInFilter
 {
     private static final String IMAGE_PATH = "images/";
+    private static int MAX_VALUE = 255;
+    private static float RED_WEIGHT = 0.299f;
+    private static float GREEN_WEIGHT = 0.587f;
+    private static float BLUE_WEIGHT = 0.114f;
 
     @Override
     public int setup(String arg, ImagePlus imp)
@@ -20,7 +24,7 @@ public class Billard_Tracker implements PlugInFilter
         int h1 = ip1.getHeight();
         byte[] pix1 = (byte[]) ip1.getPixels();
 
-        ImagePlus imgGray = NewImage.createByteImage("GrayDeBayered", w1/2, h1/2, 1, NewImage.FILL_BLACK);
+        ImagePlus imgGray = NewImage.createByteImage("GrayDeBayered", w1, h1, 1, NewImage.FILL_BLACK);
         ImageProcessor ipGray = imgGray.getProcessor();
         byte[] pixGray = (byte[]) ipGray.getPixels();
         int w2 = ipGray.getWidth();
@@ -78,6 +82,8 @@ public class Billard_Tracker implements PlugInFilter
                 green = (green1 + green2) >> 1;
 
                 pixRGB[i1] = ((red & 0xff) << 16)+((green & 0xff) << 8) + (blue & 0xff);
+                int grey = (int) ((red & 0xff) * RED_WEIGHT + (green & 0xff) * GREEN_WEIGHT + (blue & 0xff) * BLUE_WEIGHT);
+                pixGray[i1] = (byte) Math.min(MAX_VALUE, grey);
             }
             if (lastRow) break;
         }
@@ -92,14 +98,14 @@ public class Billard_Tracker implements PlugInFilter
         try
         {   png.writeImage(imgRGB , IMAGE_PATH + "Billard1024x544x3.png",  0);
 //            png.writeImage(imgHue,  IMAGE_PATH + "Billard1024x544x1H.png", 0);
-//            png.writeImage(imgGray, IMAGE_PATH + "Billard1024x544x1B.png", 0);
+            png.writeImage(imgGray, IMAGE_PATH + "Billard1024x544x1B.png", 0);
 
         } catch (Exception e)
         {   e.printStackTrace();
         }
 
-//        imgGray.show();
-//        imgGray.updateAndDraw();
+        imgGray.show();
+        imgGray.updateAndDraw();
         imgRGB.show();
         imgRGB.updateAndDraw();
 //        imgHue.show();
