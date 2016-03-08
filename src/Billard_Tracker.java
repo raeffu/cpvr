@@ -5,6 +5,8 @@ import ij.plugin.filter.PlugInFilter;
 import ij.process.ImageProcessor;
 import ij.process.ImageStatistics;
 
+import java.awt.*;
+
 public class Billard_Tracker implements PlugInFilter
 {
     private static final String IMAGE_PATH = "images/";
@@ -27,8 +29,8 @@ public class Billard_Tracker implements PlugInFilter
         ImagePlus imgGray = NewImage.createByteImage("GrayDeBayered", w1, h1, 1, NewImage.FILL_BLACK);
         ImageProcessor ipGray = imgGray.getProcessor();
         byte[] pixGray = (byte[]) ipGray.getPixels();
-        int w2 = ipGray.getWidth();
-        int h2 = ipGray.getHeight();
+//        int w2 = ipGray.getWidth();
+//        int h2 = ipGray.getHeight();
 
         ImagePlus imgRGB = NewImage.createRGBImage("RGBDeBayered", w1, h1, 1, NewImage.FILL_BLACK);
         ImageProcessor ipRGB = imgRGB.getProcessor();
@@ -36,7 +38,7 @@ public class Billard_Tracker implements PlugInFilter
 
         long msStart = System.currentTimeMillis();
 
-        ImagePlus imgHue = NewImage.createByteImage("Hue", w1/2, h1/2, 1, NewImage.FILL_BLACK);
+        ImagePlus imgHue = NewImage.createByteImage("Hue", w1, h1, 1, NewImage.FILL_BLACK);
         ImageProcessor ipHue = imgHue.getProcessor();
         byte[] pixHue = (byte[]) ipHue.getPixels();
 
@@ -82,6 +84,19 @@ public class Billard_Tracker implements PlugInFilter
                 green = (green1 + green2) >> 1;
 
                 pixRGB[i1] = ((red & 0xff) << 16)+((green & 0xff) << 8) + (blue & 0xff);
+
+//              HUE Calculation
+//              http://www.niwa.nu/2013/05/math-behind-colorspace-conversions-rgb-hsl/
+
+//              hsb[0] = hue
+//              hsb[1] = saturation
+//              hsb[2] = brightness
+                float[] hsb = Color.RGBtoHSB(red, green, blue, null);
+
+                int hue = (int) (hsb[0] * MAX_VALUE);
+                pixHue[i1] = (byte) hue;
+//                int grey = (int) (hsb[2] * MAX_VALUE);
+//                pixGray[i1] = (byte) grey;
                 int grey = (int) ((red & 0xff) * RED_WEIGHT + (green & 0xff) * GREEN_WEIGHT + (blue & 0xff) * BLUE_WEIGHT);
                 pixGray[i1] = (byte) Math.min(MAX_VALUE, grey);
             }
@@ -97,7 +112,7 @@ public class Billard_Tracker implements PlugInFilter
         PNG_Writer png = new PNG_Writer();
         try
         {   png.writeImage(imgRGB , IMAGE_PATH + "Billard1024x544x3.png",  0);
-//            png.writeImage(imgHue,  IMAGE_PATH + "Billard1024x544x1H.png", 0);
+            png.writeImage(imgHue,  IMAGE_PATH + "Billard1024x544x1H.png", 0);
             png.writeImage(imgGray, IMAGE_PATH + "Billard1024x544x1B.png", 0);
 
         } catch (Exception e)
@@ -108,8 +123,8 @@ public class Billard_Tracker implements PlugInFilter
         imgGray.updateAndDraw();
         imgRGB.show();
         imgRGB.updateAndDraw();
-//        imgHue.show();
-//        imgHue.updateAndDraw();
+        imgHue.show();
+        imgHue.updateAndDraw();
     }
 
     public static void main(String[] args)
