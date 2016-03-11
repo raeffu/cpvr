@@ -10,7 +10,7 @@ import java.awt.*;
 public class Billard_Tracker implements PlugInFilter
 {
     private static final String IMAGE_PATH = "images/";
-    private static int MAX_VALUE = 255;
+    private static float MAX_VALUE = 255.0f;
     private static float RED_WEIGHT = 0.299f;
     private static float GREEN_WEIGHT = 0.587f;
     private static float BLUE_WEIGHT = 0.114f;
@@ -26,83 +26,47 @@ public class Billard_Tracker implements PlugInFilter
         int h1 = ip1.getHeight();
         byte[] pix1 = (byte[]) ip1.getPixels();
 
-        ImagePlus imgGray = NewImage.createByteImage("GrayDeBayered", w1, h1, 1, NewImage.FILL_BLACK);
+        ImagePlus imgGray = NewImage.createByteImage("GrayDeBayered", w1/2, h1/2, 1, NewImage.FILL_BLACK);
         ImageProcessor ipGray = imgGray.getProcessor();
         byte[] pixGray = (byte[]) ipGray.getPixels();
-//        int w2 = ipGray.getWidth();
-//        int h2 = ipGray.getHeight();
+        int w2 = ipGray.getWidth();
+        int h2 = ipGray.getHeight();
 
-        ImagePlus imgRGB = NewImage.createRGBImage("RGBDeBayered", w1, h1, 1, NewImage.FILL_BLACK);
+        ImagePlus imgRGB = NewImage.createRGBImage("RGBDeBayered", w1/2, h1/2, 1, NewImage.FILL_BLACK);
         ImageProcessor ipRGB = imgRGB.getProcessor();
         int[] pixRGB = (int[]) ipRGB.getPixels();
 
         long msStart = System.currentTimeMillis();
 
-        ImagePlus imgHue = NewImage.createByteImage("Hue", w1, h1, 1, NewImage.FILL_BLACK);
+        ImagePlus imgHue = NewImage.createByteImage("Hue", w1/2, h1/2, 1, NewImage.FILL_BLACK);
         ImageProcessor ipHue = imgHue.getProcessor();
         byte[] pixHue = (byte[]) ipHue.getPixels();
 
         int i1 = 0, i2 = 0;
-        boolean lastRow = false;
 
-        for (int y=0; y < h1; y++)
-        {
-            for (int x=0; x < w1; x++)
-            {
+        for (int y=0; y < h2; y++) {
+            for (int x = 0; x < w2; x++) {
                 int green, green1, green2, red, blue;
-                i1 = y * w1 + x;
 
-                if (i1 +w1 +1 >= pix1.length) {
-                    lastRow = true;
-                    break;
-                }
-
-                if (y % 2 == 0 && x % 2 == 0) {
-                    green1 = pix1[i1] & 0xff;
-                    blue = pix1[i1+1] & 0xff;
-                    red = pix1[i1+w1] & 0xff;
-                    green2 = pix1[i1+w1+1] & 0xff;
-                }
-                else if (y % 2 == 0 && x % 2 == 1) {
-                    blue = pix1[i1] & 0xff;
-                    green1 = pix1[i1+1] & 0xff;
-                    green2 = pix1[i1+w1] & 0xff;
-                    red = pix1[i1+w1+1] & 0xff;
-                }
-                else if (y % 2 == 1 && x % 2 == 0) {
-                    red = pix1[i1] & 0xff;
-                    green1 = pix1[i1+1] & 0xff;
-                    green2 = pix1[i1+w1] & 0xff;
-                    blue = pix1[i1+w1+1] & 0xff;
-                }
-                else {
-                    green1 = pix1[i1] & 0xff;
-                    red = pix1[i1+1] & 0xff;
-                    blue = pix1[i1+w1] & 0xff;
-                    green2 = pix1[i1+w1+1] & 0xff;
-                }
+                green1 = pix1[i1] & 0xff;
+                blue = pix1[i1 + 1] & 0xff;
+                red = pix1[i1 + w1] & 0xff;
+                green2 = pix1[i1 + w1 + 1] & 0xff;
                 green = (green1 + green2) >> 1;
 
-                pixRGB[i1] = ((red & 0xff) << 16)+((green & 0xff) << 8) + (blue & 0xff);
-
-//              HUE Calculation
-//              http://www.niwa.nu/2013/05/math-behind-colorspace-conversions-rgb-hsl/
-
-//              hsb[0] = hue
-//              hsb[1] = saturation
-//              hsb[2] = brightness
                 float[] hsb = Color.RGBtoHSB(red, green, blue, null);
 
-                int hue = (int) (hsb[0] * MAX_VALUE);
-                pixHue[i1] = (byte) hue;
-//                int grey = (int) (hsb[2] * MAX_VALUE);
-//                pixGray[i1] = (byte) grey;
+                pixRGB[i2] = ((red & 0xff) << 16) + ((green & 0xff) << 8) + (blue & 0xff);
+                pixHue[i2] = (byte) (int) (hsb[0] * MAX_VALUE);
+//                pixGray[i2] = (byte) (int) (hsb[2] * MAX_VALUE);
                 int grey = (int) ((red & 0xff) * RED_WEIGHT + (green & 0xff) * GREEN_WEIGHT + (blue & 0xff) * BLUE_WEIGHT);
-                pixGray[i1] = (byte) Math.min(MAX_VALUE, grey);
-            }
-            if (lastRow) break;
-        }
+                pixGray[i2] = (byte) Math.min(MAX_VALUE, grey);
 
+                i1 += 2;
+                i2++;
+            }
+            i1 += w1;
+        }
 
         long ms = System.currentTimeMillis() - msStart;
         System.out.println(ms);
@@ -132,7 +96,7 @@ public class Billard_Tracker implements PlugInFilter
         Billard_Tracker plugin = new Billard_Tracker();
 
         ImagePlus im = new ImagePlus(IMAGE_PATH + "Billard2048x1088x1.png");
-//        im.show();
+        im.show();
         plugin.setup("", im);
         plugin.run(im.getProcessor());
     }
